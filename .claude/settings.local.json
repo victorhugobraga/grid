@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(Get-ChildItem D:\\\\www\\\\grid -Name | Where-Object { $_ -ne \"node_modules\" })",
+      "Bash(npx husky *)"
+    ]
+  }
+}

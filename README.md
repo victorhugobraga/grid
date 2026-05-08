@@ -1,36 +1,60 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# grid
 
-## Getting Started
+Dashboard pessoal para acompanhar F1 e Futebol em tempo real.
 
-First, run the development server:
+## Stack
+
+- Next.js 15 (App Router + API Routes)
+- TypeScript strict
+- Tailwind CSS v4
+- Upstash Redis (cache)
+- Vercel (deploy)
+
+## Pré-requisitos
+
+- Node 20+
+
+## Como rodar
 
 ```bash
+cp .env.example .env.local
+
+# preencha as variáveis no .env.local
+
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Scripts
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+| Comando              | O que faz                            |
+| -------------------- | ------------------------------------ |
+| `npm run dev`        | Inicia o servidor de desenvolvimento |
+| `npm run build`      | Gera o build de produção             |
+| `npm run test`       | Roda os testes                       |
+| `npm run type-check` | Verifica tipos TypeScript            |
+| `npm run format`     | Formata o código com Prettier        |
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Estrutura
 
-## Learn More
+```
+src/
+├── app/ # App Router (páginas e API Routes)
+├── components/ # Componentes React
+├── hooks/ # React hooks customizados
+├── lib/ # Clientes e utilitários (redis, etc)
+├── schemas/ # Schemas Zod
+├── services/ # Lógica de negócio
+└── types/ # TypeScript types
+```
 
-To learn more about Next.js, take a look at the following resources:
+## Commits
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Projeto usa Conventional Commits:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- `feat:` nova funcionalidade
+- `fix:` correção de bug
+- `chore:` manutenção
+- `docs:` documentação
+- `refactor:` refatoração sem mudança de comportamento
+- `test:` testes
