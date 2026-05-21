@@ -1,4 +1,5 @@
-import { withHandler, ok } from "@/lib/api";
+import { withHandler, okWithCache } from "@/lib/api";
+import { TTL } from "@/lib/cache";
 import { ratelimit, getIp } from "@/lib/rate-limit";
 import { RateLimitError, AppError } from "@/lib/errors";
 import { footballStandingsQuerySchema } from "@/schemas/football.schema";
@@ -21,5 +22,5 @@ export const GET = withHandler(async (req: Request, ctx: unknown) => {
   }
 
   const { data, cachedAt } = await service.getStandings(parsed.data.league);
-  return ok(data, cachedAt);
+  return okWithCache(data, TTL.STANDINGS, cachedAt);
 });

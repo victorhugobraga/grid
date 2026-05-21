@@ -1,25 +1,11 @@
 import { withCache, TTL } from "@/lib/cache";
-import { ExternalApiError } from "@/lib/errors";
+import { fetcher } from "@/lib/fetcher";
 import type { F1Race, F1Standing, F1RaceResult } from "@/types/f1";
 
 const JOLPICA_BASE = "https://api.jolpi.ca/ergast/f1";
 
-async function jolpicaFetch<T>(path: string): Promise<T> {
-  try {
-    const res = await fetch(`${JOLPICA_BASE}${path}`, {
-      headers: { Accept: "application/json" },
-      next: { revalidate: 0 },
-    });
-
-    if (!res.ok) {
-      throw new ExternalApiError("Jolpica-F1", `Status ${res.status}`);
-    }
-
-    return res.json() as Promise<T>;
-  } catch (err) {
-    if (err instanceof ExternalApiError) throw err;
-    throw new ExternalApiError("Jolpica-F1", "Erro de rede");
-  }
+function jolpicaFetch<T>(path: string): Promise<T> {
+  return fetcher<T>(`${JOLPICA_BASE}${path}`, "Jolpica-F1");
 }
 
 function parseRace(raw: Record<string, unknown>): F1Race {

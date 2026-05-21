@@ -1,3 +1,5 @@
+import { GridLayout } from "@/components/features/grid-layout";
+
 export default function QuickPage() {
-  return <div>em breve</div>;
+  return <GridLayout />;
 }

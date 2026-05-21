@@ -10,6 +10,24 @@ export function ok<T>(data: T, cachedAt?: Date): Response {
   return Response.json(body);
 }
 
+export function okWithCache<T>(
+  data: T,
+  ttlSeconds: number,
+  cachedAt?: Date,
+): Response {
+  const body: ApiResponse<T> = {
+    success: true,
+    data,
+    ...(cachedAt && { cachedAt: cachedAt.toISOString() }),
+  };
+
+  return Response.json(body, {
+    headers: {
+      "Cache-Control": `public, s-maxage=${ttlSeconds}, stale-while-revalidate=${ttlSeconds * 2}`,
+    },
+  });
+}
+
 export function err(error: unknown): Response {
   if (error instanceof AppError) {
     const body: ApiError = {

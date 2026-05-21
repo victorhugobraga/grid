@@ -147,3 +147,26 @@ npm run format       # formata com Prettier
 6. **Escreva testes para services antes de implementá-los (TDD)**
 7. **Conventional commits obrigatórios**
 8. **Nunca modifique este CLAUDE.md sem avisar o desenvolvedor**
+
+## Máquina de estados live
+
+O sistema usa um estado no Redis (`grid:live:state`) para evitar chamadas desnecessárias à API-Football durante períodos sem jogos.
+
+| Estado       | Condição                       | Polling do frontend |
+| ------------ | ------------------------------ | ------------------- |
+| `idle`       | Sem eventos nas próximas 2h    | 6h                  |
+| `pre-event`  | Evento em menos de 2h          | 5min                |
+| `live`       | Evento acontecendo             | 60s                 |
+| `post-event` | Evento terminou há menos de 1h | 1min                |
+
+O estado é recalculado a cada 5 minutos via cron (QStash/GitHub Actions na Fase 7).
+O endpoint `/api/live/state` expõe o estado atual e o intervalo de polling recomendado.
+
+## Cache em camadas
+
+1. **Browser** — Cache-Control header (s-maxage + stale-while-revalidate)
+2. **Vercel CDN** — serve da edge sem chegar ao servidor
+3. **Upstash Redis** — cache compartilhado entre invocações serverless
+4. **SWR no cliente** — serve dado em cache enquanto revalida em background
+
+Cada camada tem seu TTL específico definido em `src/lib/cache.ts → TTL`.

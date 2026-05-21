@@ -1,4 +1,5 @@
-import { withHandler, ok } from "@/lib/api";
+import { withHandler, okWithCache } from "@/lib/api";
+import { TTL } from "@/lib/cache";
 import { ratelimit, getIp } from "@/lib/rate-limit";
 import { RateLimitError } from "@/lib/errors";
 import { F1Service } from "@/services/f1.service";
@@ -12,5 +13,5 @@ export const GET = withHandler(async (req: Request) => {
 
   const season = String(new Date().getFullYear());
   const { data, cachedAt } = await service.getDriverStandings(season);
-  return ok(data, cachedAt);
+  return okWithCache(data, TTL.STANDINGS, cachedAt);
 });

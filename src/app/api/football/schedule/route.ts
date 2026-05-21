@@ -1,4 +1,5 @@
-import { withHandler, ok } from "@/lib/api";
+import { withHandler, okWithCache } from "@/lib/api";
+import { TTL } from "@/lib/cache";
 import { ratelimit, getIp } from "@/lib/rate-limit";
 import { RateLimitError, AppError } from "@/lib/errors";
 import { footballScheduleQuerySchema } from "@/schemas/football.schema";
@@ -21,5 +22,5 @@ export const GET = withHandler(async (req: Request) => {
   }
 
   const { data, cachedAt } = await service.getMatchesByDate(parsed.data.date);
-  return ok(data, cachedAt);
+  return okWithCache(data, TTL.FIXTURES, cachedAt);
 });

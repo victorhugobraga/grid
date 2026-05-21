@@ -1,35 +1,21 @@
 import { withCache, TTL } from "@/lib/cache";
 import { ExternalApiError } from "@/lib/errors";
+import { fetcher } from "@/lib/fetcher";
 import { LEAGUE_IDS } from "@/lib/constants";
 import type { FootballMatch, FootballStanding, League } from "@/types/football";
 
 const API_FOOTBALL_BASE = "https://v3.football.api-sports.io";
 
-async function apiFootballFetch<T>(path: string): Promise<T> {
+function apiFootballFetch<T>(path: string): Promise<T> {
   const apiKey = process.env.API_FOOTBALL_KEY;
 
   if (!apiKey) {
     throw new ExternalApiError("API-Football", "API key não configurada");
   }
 
-  try {
-    const res = await fetch(`${API_FOOTBALL_BASE}${path}`, {
-      headers: {
-        "x-apisports-key": apiKey,
-        Accept: "application/json",
-      },
-      next: { revalidate: 0 },
-    });
-
-    if (!res.ok) {
-      throw new ExternalApiError("API-Football", `Status ${res.status}`);
-    }
-
-    return res.json() as Promise<T>;
-  } catch (err) {
-    if (err instanceof ExternalApiError) throw err;
-    throw new ExternalApiError("API-Football", "Erro de rede");
-  }
+  return fetcher<T>(`${API_FOOTBALL_BASE}${path}`, "API-Football", {
+    headers: { "x-apisports-key": apiKey },
+  });
 }
 
 function parseMatch(raw: Record<string, unknown>): FootballMatch {
@@ -68,9 +54,7 @@ function parseMatch(raw: Record<string, unknown>): FootballMatch {
 }
 
 export class FootballService {
-  async getStandings(
-    league: League,
-  ): Promise<{
+  async getStandings(league: League): Promise<{
     data: FootballStanding[];
     fromCache: boolean;
     cachedAt?: Date;

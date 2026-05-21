@@ -2,7 +2,29 @@
   "permissions": {
     "allow": [
       "PowerShell(Get-ChildItem D:\\\\www\\\\grid -Name | Where-Object { $_ -ne \"node_modules\" })",
-      "Bash(npx husky *)"
+      "Bash(npx husky *)",
+      "Bash(Get-ChildItem -Path . -Depth 2)",
+      "Bash(Format-Table -AutoSize)",
+      "Bash(Get-ChildItem -Path \"D:\\\\www\\\\grid\" -Recurse -Directory)",
+      "Bash(Select-Object -ExpandProperty FullName)",
+      "Bash(Sort-Object)",
+      "Bash(npm test *)",
+      "Bash(grep -E \"README|\\\\.md$\")",
+      "Bash(git add *)",
+      "PowerShell(New-Item *)",
+      "Bash(Get-ChildItem -Path \"D:\\\\www\\\\grid\" -Recurse -Force)",
+      "WebFetch(domain:api.anthropic.com)",
+      "Bash(New-Item -ItemType Directory -Force -Path \"D:\\\\www\\\\grid\\\\src\\\\components\\\\features\")",
+      "Bash(Out-Null)",
+      "Bash(Write-Output \"done\")",
+      "Bash(Get-ChildItem -Path \"D:\\\\www\\\\grid\\\\src\" -Recurse -Directory)",
+      "Bash(npm run *)",
+      "Bash(npx tsc *)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000/)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000/f1)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000/football)",
+      "Bash(npx playwright *)",
+      "Bash(npx eslint *)"
     ]
   }
 }

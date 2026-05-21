@@ -3,5 +3,9 @@ export default function QuickLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return <>{children}</>;
+  return (
+    <div style={{ position: "fixed", inset: 0, overflow: "hidden" }}>
+      {children}
+    </div>
+  );
 }
