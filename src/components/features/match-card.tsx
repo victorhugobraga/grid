@@ -14,6 +14,30 @@ interface MatchCardProps {
   big?: boolean;
 }
 
+interface TeamLogoProps {
+  logo?: string;
+  name: string;
+  short: string;
+  accent?: string;
+  size: number;
+}
+
+function TeamLogo({ logo, name, short, accent, size }: TeamLogoProps) {
+  if (logo) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={logo}
+        alt={name}
+        width={size}
+        height={size}
+        style={{ objectFit: "contain", flexShrink: 0 }}
+      />
+    );
+  }
+  return <TeamMark short={short} accent={accent} size={size} />;
+}
+
 export function MatchCard({ match, copy, big = false }: MatchCardProps) {
   const [hovered, setHovered] = useState(false);
 
@@ -21,13 +45,17 @@ export function MatchCard({ match, copy, big = false }: MatchCardProps) {
   const homeInfo = getFootballInfo(match.home.name);
   const awayInfo = getFootballInfo(match.away.name);
 
-  const time = new Date(match.date).toLocaleTimeString("pt-BR", {
+  const dateObj = new Date(match.date);
+  const time = dateObj.toLocaleString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
     hour: "2-digit",
     minute: "2-digit",
     timeZone: "America/Sao_Paulo",
   });
 
   const stage = match.league.round ?? "";
+  const logoSize = big ? 36 : 28;
 
   return (
     <div
@@ -95,10 +123,12 @@ export function MatchCard({ match, copy, big = false }: MatchCardProps) {
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <TeamMark
+          <TeamLogo
+            logo={match.home.logo}
+            name={match.home.name}
             short={homeInfo.short}
             accent={homeInfo.accent}
-            size={big ? 36 : 28}
+            size={logoSize}
           />
           <span
             style={{
@@ -153,10 +183,12 @@ export function MatchCard({ match, copy, big = false }: MatchCardProps) {
           >
             {match.away.name}
           </span>
-          <TeamMark
+          <TeamLogo
+            logo={match.away.logo}
+            name={match.away.name}
             short={awayInfo.short}
             accent={awayInfo.accent}
-            size={big ? 36 : 28}
+            size={logoSize}
           />
         </div>
       </div>

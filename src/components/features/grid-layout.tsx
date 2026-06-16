@@ -5,22 +5,21 @@ import { getDailyBackground } from "@/lib/backgrounds";
 import { useTheme } from "@/hooks/use-theme";
 import {
   useF1Schedule,
-  useFootballToday,
+  useFlamengoSchedule,
   useFootballLive,
   useLiveState,
 } from "@/hooks/use-live-data";
 import { useClock } from "@/hooks/use-clock";
 import { Greeting } from "./greeting";
-import { ThemePopover } from "./theme-popover";
 import { F1FooterSlot } from "./f1-footer-slot";
 import { FootballFooterSlot } from "./football-footer-slot";
 
 const bg = getDailyBackground();
 
 export function GridLayout() {
-  const { theme, setTheme } = useTheme();
+  const { theme } = useTheme();
   const { nextRace } = useF1Schedule();
-  const footballMatches = useFootballToday();
+  const footballMatches = useFlamengoSchedule();
   const footballLive = useFootballLive();
   const { state: liveState } = useLiveState();
   const time = useClock();
@@ -97,23 +96,12 @@ export function GridLayout() {
           style={{
             display: "flex",
             gap: 16,
-            paddingRight: 110,
           }}
         >
           <span>brl/utc-3</span>
           <span style={{ color: "var(--fg)" }}>são paulo</span>
         </div>
       </div>
-
-      {/* Theme controls */}
-      <ThemePopover
-        dark={theme.dark}
-        accent={theme.accent}
-        lang={theme.lang}
-        onDark={(v) => setTheme({ dark: v })}
-        onAccent={(id) => setTheme({ accent: id })}
-        onLang={(l) => setTheme({ lang: l })}
-      />
 
       {/* Centered greeting — 38% from top */}
       <div

@@ -2,7 +2,7 @@ import { z } from "zod";
 
 export const SUPPORTED_LEAGUES = [
   "brasileirao",
-  "libertadores",
+  "copa-brasil",
   "champions",
   "worldcup",
 ] as const;

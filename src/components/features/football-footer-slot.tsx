@@ -11,19 +11,20 @@ export function FootballFooterSlot({
   liveMatches,
   lang,
 }: FootballFooterSlotProps) {
-  const todayLabel = lang === "pt" ? "Hoje" : "Today";
   const liveLabel = lang === "pt" ? "Ao vivo" : "Live";
 
-  const liveMatch = liveMatches[0] ?? null;
-  const nextMatch =
-    matches.find(
+  const liveMatch =
+    liveMatches.find(
       (m) =>
-        m.status.short === "NS" ||
-        m.status.short === "LIVE" ||
-        m.status.short === "HT",
+        (m.home.name.toLowerCase().includes("flamengo") ||
+          m.away.name.toLowerCase().includes("flamengo")) &&
+        (m.status.short === "LIVE" || m.status.short === "HT"),
     ) ??
-    matches[0] ??
+    liveMatches[0] ??
     null;
+
+  const nextMatch =
+    matches.find((m) => m.status.short === "NS") ?? matches[0] ?? null;
 
   if (liveMatch) {
     return (
@@ -96,7 +97,7 @@ export function FootballFooterSlot({
           alignItems: "flex-end",
         }}
       >
-        <MetaLabel>{todayLabel}</MetaLabel>
+        <MetaLabel>Flamengo</MetaLabel>
         <span
           style={{
             fontFamily: "var(--font-display)",
@@ -111,10 +112,26 @@ export function FootballFooterSlot({
     );
   }
 
-  const matchTime = new Date(nextMatch.date).toLocaleTimeString(
-    lang === "pt" ? "pt-BR" : "en-US",
-    { hour: "2-digit", minute: "2-digit" },
-  );
+  const matchDate = new Date(nextMatch.date);
+  const today = new Date();
+  const isToday =
+    matchDate.getFullYear() === today.getFullYear() &&
+    matchDate.getMonth() === today.getMonth() &&
+    matchDate.getDate() === today.getDate();
+
+  const locale = lang === "pt" ? "pt-BR" : "en-US";
+  const matchTime = matchDate.toLocaleTimeString(locale, {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+  const matchDateLabel = isToday
+    ? matchTime
+    : matchDate.toLocaleDateString(locale, {
+        day: "2-digit",
+        month: "short",
+      }) +
+      " · " +
+      matchTime;
 
   return (
     <div
@@ -125,7 +142,7 @@ export function FootballFooterSlot({
         alignItems: "flex-end",
       }}
     >
-      <MetaLabel>{todayLabel}</MetaLabel>
+      <MetaLabel>Flamengo</MetaLabel>
       <div
         style={{
           display: "flex",
@@ -158,7 +175,7 @@ export function FootballFooterSlot({
           letterSpacing: "0.04em",
         }}
       >
-        {matchTime} · {nextMatch.league.name}
+        {matchDateLabel} · {nextMatch.league.name}
       </span>
     </div>
   );

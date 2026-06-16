@@ -43,10 +43,7 @@ export function ThemePopover({
   } as React.CSSProperties;
 
   return (
-    <div
-      ref={ref}
-      style={{ position: "absolute", top: 24, right: 24, zIndex: 20 }}
-    >
+    <div ref={ref} style={{ position: "relative", zIndex: 20 }}>
       <button
         onClick={() => setOpen((v) => !v)}
         aria-label="Opções de tema"

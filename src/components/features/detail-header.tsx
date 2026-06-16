@@ -3,14 +3,24 @@
 import Link from "next/link";
 import type { CSSProperties } from "react";
 import type { Copy } from "@/lib/copy";
+import type { Theme } from "@/hooks/use-theme";
+import { ThemePopover } from "@/components/features/theme-popover";
 
 interface DetailHeaderProps {
   active: "f1" | "football";
   copy: Copy;
   onNav: (section: "f1" | "football") => void;
+  theme?: Theme;
+  onTheme?: (patch: Partial<Theme>) => void;
 }
 
-export function DetailHeader({ active, copy, onNav }: DetailHeaderProps) {
+export function DetailHeader({
+  active,
+  copy,
+  onNav,
+  theme,
+  onTheme,
+}: DetailHeaderProps) {
   return (
     <div
       style={{
@@ -101,6 +111,19 @@ export function DetailHeader({ active, copy, onNav }: DetailHeaderProps) {
           );
         })}
       </nav>
+
+      {theme && onTheme && (
+        <div style={{ marginLeft: "auto" }}>
+          <ThemePopover
+            dark={theme.dark}
+            accent={theme.accent}
+            lang={theme.lang}
+            onDark={(v) => onTheme({ dark: v })}
+            onAccent={(id) => onTheme({ accent: id })}
+            onLang={(l) => onTheme({ lang: l })}
+          />
+        </div>
+      )}
     </div>
   );
 }

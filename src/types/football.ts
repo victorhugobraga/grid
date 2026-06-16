@@ -1,4 +1,4 @@
-export type League = "brasileirao" | "libertadores" | "champions" | "worldcup";
+export type League = "brasileirao" | "copa-brasil" | "champions" | "worldcup";
 
 export type FootballTeam = {
   id: number;

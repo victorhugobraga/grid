@@ -1,56 +1,166 @@
 import { withCache, TTL } from "@/lib/cache";
-import { ExternalApiError } from "@/lib/errors";
 import { fetcher } from "@/lib/fetcher";
-import { LEAGUE_IDS } from "@/lib/constants";
+import { ESPN_SLUGS, FLAMENGO_EXTRA_SLUGS } from "@/lib/constants";
 import type { FootballMatch, FootballStanding, League } from "@/types/football";
 
-const API_FOOTBALL_BASE = "https://v3.football.api-sports.io";
+// standings usa /apis/v2; scoreboard exige /apis/site/v2
+const ESPN_STANDINGS_BASE = "https://site.api.espn.com/apis/v2/sports/soccer";
+const ESPN_SCOREBOARD_BASE =
+  "https://site.api.espn.com/apis/site/v2/sports/soccer";
 
-function apiFootballFetch<T>(path: string): Promise<T> {
-  const apiKey = process.env.API_FOOTBALL_KEY;
+const LEAGUE_TO_ESPN_SLUG: Record<League, string> = {
+  brasileirao: ESPN_SLUGS.BRASILEIRAO,
+  "copa-brasil": ESPN_SLUGS.COPA_BRASIL,
+  champions: ESPN_SLUGS.CHAMPIONS,
+  worldcup: ESPN_SLUGS.WORLD_CUP,
+};
 
-  if (!apiKey) {
-    throw new ExternalApiError("API-Football", "API key não configurada");
-  }
+function mapStatus(
+  state: string,
+  name: string,
+): FootballMatch["status"]["short"] {
+  if (name === "STATUS_HALFTIME") return "HT";
+  if (name === "STATUS_POSTPONED") return "PST";
+  if (name === "STATUS_CANCELED" || name === "STATUS_CANCELLED") return "CANC";
+  if (state === "in") return "LIVE";
+  if (state === "post") return "FT";
+  return "NS";
+}
 
-  return fetcher<T>(`${API_FOOTBALL_BASE}${path}`, "API-Football", {
-    headers: { "x-apisports-key": apiKey },
+function parseESPNEvent(
+  event: Record<string, unknown>,
+  leagueInfo: { id: number; name: string },
+): FootballMatch {
+  const competitions = event.competitions as Record<string, unknown>[];
+  const comp = competitions[0];
+
+  const statusBlock = comp.status as Record<string, unknown>;
+  const statusType = statusBlock.type as Record<string, unknown>;
+  const state = statusType.state as string;
+  const statusName = statusType.name as string;
+  const shortStatus = mapStatus(state, statusName);
+
+  const displayClock = statusBlock.displayClock as string | undefined;
+  const elapsed =
+    state === "in" && displayClock
+      ? parseInt(displayClock.replace("'", "").split(":")[0], 10)
+      : undefined;
+
+  const competitors = comp.competitors as Record<string, unknown>[];
+  const homeComp =
+    competitors.find((c) => c.homeAway === "home") ?? competitors[0];
+  const awayComp =
+    competitors.find((c) => c.homeAway === "away") ?? competitors[1];
+
+  const homeTeam = homeComp.team as Record<string, unknown>;
+  const awayTeam = awayComp.team as Record<string, unknown>;
+
+  const parseGoals = (c: Record<string, unknown>): number | null => {
+    if (state !== "in" && state !== "post") return null;
+    const score = c.score as string | undefined;
+    return score != null && score !== "" ? parseInt(score, 10) : null;
+  };
+
+  const notes = comp.notes as Record<string, unknown>[] | undefined;
+  const round = (notes?.[0]?.headline as string | undefined) ?? "";
+
+  return {
+    id: parseInt(event.id as string, 10),
+    date: event.date as string,
+    status: { short: shortStatus, elapsed },
+    league: { id: leagueInfo.id, name: leagueInfo.name, round },
+    home: {
+      id: parseInt(homeTeam.id as string, 10),
+      name: homeTeam.displayName as string,
+      logo: homeTeam.logo as string | undefined,
+      goals: parseGoals(homeComp),
+    },
+    away: {
+      id: parseInt(awayTeam.id as string, 10),
+      name: awayTeam.displayName as string,
+      logo: awayTeam.logo as string | undefined,
+      goals: parseGoals(awayComp),
+    },
+  };
+}
+
+async function fetchScoreboardFromESPN(
+  slug: string,
+  dates?: string,
+): Promise<FootballMatch[]> {
+  const url = dates
+    ? `${ESPN_SCOREBOARD_BASE}/${slug}/scoreboard?dates=${dates}`
+    : `${ESPN_SCOREBOARD_BASE}/${slug}/scoreboard`;
+
+  const json = await fetcher<Record<string, unknown>>(url, "ESPN");
+
+  const leagues = (json.leagues as Record<string, unknown>[]) ?? [];
+  const leagueInfo = leagues[0] as Record<string, unknown> | undefined;
+  const leagueName = (leagueInfo?.name as string | undefined) ?? slug;
+  const leagueId = parseInt((leagueInfo?.id as string | undefined) ?? "0", 10);
+
+  const events = (json.events as Record<string, unknown>[]) ?? [];
+
+  return events.flatMap((event) => {
+    try {
+      return [parseESPNEvent(event, { id: leagueId, name: leagueName })];
+    } catch {
+      return [];
+    }
   });
 }
 
-function parseMatch(raw: Record<string, unknown>): FootballMatch {
-  const fixture = raw.fixture as Record<string, unknown>;
-  const status = fixture.status as Record<string, unknown>;
-  const league = raw.league as Record<string, unknown>;
-  const teams = raw.teams as Record<string, unknown>;
-  const home = teams.home as Record<string, unknown>;
-  const away = teams.away as Record<string, unknown>;
+async function fetchStandingsFromESPN(
+  slug: string,
+): Promise<FootballStanding[]> {
+  const json = await fetcher<Record<string, unknown>>(
+    `${ESPN_STANDINGS_BASE}/${slug}/standings`,
+    "ESPN",
+  );
 
-  return {
-    id: fixture.id as number,
-    date: fixture.date as string,
-    status: {
-      short: status.short as FootballMatch["status"]["short"],
-      elapsed: status.elapsed as number | undefined,
-    },
-    league: {
-      id: league.id as number,
-      name: league.name as string,
-      round: league.round as string,
-    },
-    home: {
-      id: home.id as number,
-      name: home.name as string,
-      logo: home.logo as string,
-      goals: home.goals as number | null,
-    },
-    away: {
-      id: away.id as number,
-      name: away.name as string,
-      logo: away.logo as string,
-      goals: away.goals as number | null,
-    },
-  };
+  const children = json.children as Record<string, unknown>[] | undefined;
+  if (!children?.length) return [];
+
+  const standingsBlock = children[0].standings as Record<string, unknown>;
+  const entries = (standingsBlock.entries as Record<string, unknown>[]) ?? [];
+
+  return entries.map((entry) => {
+    const team = entry.team as Record<string, unknown>;
+    const stats = entry.stats as Record<string, unknown>[];
+
+    const getStat = (name: string): number => {
+      const found = stats.find((s) => s.name === name);
+      return found ? (found.value as number) : 0;
+    };
+
+    const logos = team.logos as { href: string }[] | undefined;
+
+    return {
+      rank: getStat("rank"),
+      team: {
+        id: Number(team.id),
+        name: team.displayName as string,
+        logo: logos?.[0]?.href ?? "",
+      },
+      points: getStat("points"),
+      played: getStat("gamesPlayed"),
+      won: getStat("wins"),
+      drawn: getStat("ties"),
+      lost: getStat("losses"),
+      goalsFor: getStat("pointsFor"),
+      goalsAgainst: getStat("pointsAgainst"),
+      goalsDiff: getStat("pointDifferential"),
+    };
+  });
+}
+
+function dedupeMatches(matches: FootballMatch[]): FootballMatch[] {
+  const seen = new Set<number>();
+  return matches.filter((m) => {
+    if (seen.has(m.id)) return false;
+    seen.add(m.id);
+    return true;
+  });
 }
 
 export class FootballService {
@@ -59,52 +169,17 @@ export class FootballService {
     fromCache: boolean;
     cachedAt?: Date;
   }> {
-    const leagueId =
-      LEAGUE_IDS[league.toUpperCase() as keyof typeof LEAGUE_IDS];
-    const season = new Date().getFullYear();
+    const slug = LEAGUE_TO_ESPN_SLUG[league];
 
     return withCache(
-      `football:standings:${league}:${season}`,
+      `football:standings:${league}:espn`,
       TTL.STANDINGS,
       async () => {
-        const json = await apiFootballFetch<Record<string, unknown>>(
-          `/standings?league=${leagueId}&season=${season}`,
-        );
-        const response = (json.response as Record<string, unknown>[]) ?? [];
-
-        if (response.length === 0) return [];
-
-        const leagueData = response[0].league as Record<string, unknown>;
-        const standingsGroups = leagueData.standings as Record<
-          string,
-          unknown
-        >[][];
-        const standings = standingsGroups[0] ?? [];
-
-        return standings.map((s) => {
-          const team = s.team as Record<string, unknown>;
-          const all = s.all as Record<string, unknown>;
-
-          return {
-            rank: s.rank as number,
-            team: {
-              id: team.id as number,
-              name: team.name as string,
-              logo: team.logo as string,
-            },
-            points: s.points as number,
-            played: all.played as number,
-            won: all.win as number,
-            drawn: all.draw as number,
-            lost: all.lose as number,
-            goalsFor:
-              (all.goals as Record<string, number> | undefined)?.for ?? 0,
-            goalsAgainst:
-              (all.goals as Record<string, number> | undefined)?.against ?? 0,
-            goalsDiff: s.goalsDiff as number,
-            form: s.form as string | undefined,
-          };
-        });
+        try {
+          return await fetchStandingsFromESPN(slug);
+        } catch {
+          return [];
+        }
       },
     );
   }
@@ -113,11 +188,22 @@ export class FootballService {
     date: string,
   ): Promise<{ data: FootballMatch[]; fromCache: boolean; cachedAt?: Date }> {
     return withCache(`football:matches:${date}`, TTL.FIXTURES, async () => {
-      const json = await apiFootballFetch<Record<string, unknown>>(
-        `/fixtures?date=${date}`,
+      const espnDate = date.replace(/-/g, "");
+
+      const results = await Promise.allSettled(
+        Object.values(ESPN_SLUGS).map((slug) =>
+          fetchScoreboardFromESPN(slug, espnDate),
+        ),
       );
-      const response = (json.response as Record<string, unknown>[]) ?? [];
-      return response.map(parseMatch);
+
+      return dedupeMatches(
+        results
+          .filter(
+            (r): r is PromiseFulfilledResult<FootballMatch[]> =>
+              r.status === "fulfilled",
+          )
+          .flatMap((r) => r.value),
+      );
     });
   }
 
@@ -127,13 +213,55 @@ export class FootballService {
     cachedAt?: Date;
   }> {
     return withCache("football:live", TTL.LIVE, async () => {
-      const json =
-        await apiFootballFetch<Record<string, unknown>>("/fixtures?live=all");
-      const response = (json.response as Record<string, unknown>[]) ?? [];
-      const all = response.map(parseMatch);
-      return all.filter(
-        (m) => m.status.short === "LIVE" || m.status.short === "HT",
+      const results = await Promise.allSettled(
+        Object.values(ESPN_SLUGS).map((slug) => fetchScoreboardFromESPN(slug)),
       );
+
+      return dedupeMatches(
+        results
+          .filter(
+            (r): r is PromiseFulfilledResult<FootballMatch[]> =>
+              r.status === "fulfilled",
+          )
+          .flatMap((r) => r.value),
+      ).filter((m) => m.status.short === "LIVE" || m.status.short === "HT");
+    });
+  }
+
+  async getFlamengoUpcoming(): Promise<{
+    data: FootballMatch[];
+    fromCache: boolean;
+    cachedAt?: Date;
+  }> {
+    return withCache("football:flamengo:upcoming", TTL.FIXTURES, async () => {
+      const today = new Date();
+      const end = new Date(today);
+      end.setDate(end.getDate() + 14);
+
+      const fmt = (d: Date) => d.toISOString().split("T")[0].replace(/-/g, "");
+      const dateRange = `${fmt(today)}-${fmt(end)}`;
+
+      const allSlugs = [...Object.values(ESPN_SLUGS), ...FLAMENGO_EXTRA_SLUGS];
+
+      const results = await Promise.allSettled(
+        allSlugs.map((slug) => fetchScoreboardFromESPN(slug, dateRange)),
+      );
+
+      const isFlamengo = (m: FootballMatch) =>
+        m.home.name.toLowerCase().includes("flamengo") ||
+        m.away.name.toLowerCase().includes("flamengo");
+
+      return dedupeMatches(
+        results
+          .filter(
+            (r): r is PromiseFulfilledResult<FootballMatch[]> =>
+              r.status === "fulfilled",
+          )
+          .flatMap((r) => r.value),
+      )
+        .filter((m) => isFlamengo(m) && m.status.short === "NS")
+        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+        .slice(0, 5);
     });
   }
 }

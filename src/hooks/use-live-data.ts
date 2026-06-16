@@ -90,3 +90,11 @@ export function useFootballStandings(league: League) {
   );
   return data ?? [];
 }
+
+export function useFlamengoSchedule() {
+  const { data } = useSWR("/api/football/flamengo", fetcher<FootballMatch[]>, {
+    refreshInterval: 30 * 60 * 1000,
+    onErrorRetry: () => {},
+  });
+  return data ?? [];
+}

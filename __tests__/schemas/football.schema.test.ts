@@ -5,7 +5,7 @@ import {
 
 describe("footballStandingsQuerySchema", () => {
   it("deve aceitar league válida", () => {
-    const ligas = ["brasileirao", "libertadores", "champions", "worldcup"];
+    const ligas = ["brasileirao", "copa-brasil", "champions", "worldcup"];
     ligas.forEach((league) => {
       const result = footballStandingsQuerySchema.safeParse({ league });
       expect(result.success).toBe(true);

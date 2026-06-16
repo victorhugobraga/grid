@@ -16,6 +16,7 @@ export type Copy = {
   f1Section: string;
   footballSection: string;
   todayMatches: string;
+  nextMatches: string;
   bigGame: string;
   pos: string;
   pts: string;
@@ -47,6 +48,7 @@ const COPY: Record<Lang, Copy> = {
     f1Section: "F1",
     footballSection: "Futebol",
     todayMatches: "Jogos de hoje",
+    nextMatches: "Próximos jogos",
     bigGame: "Jogo importante",
     pos: "Pos",
     pts: "Pts",
@@ -76,6 +78,7 @@ const COPY: Record<Lang, Copy> = {
     f1Section: "F1",
     footballSection: "Football",
     todayMatches: "Today's matches",
+    nextMatches: "Upcoming matches",
     bigGame: "Big game",
     pos: "Pos",
     pts: "Pts",

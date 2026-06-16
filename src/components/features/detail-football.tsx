@@ -7,9 +7,9 @@ import {
   useFootballToday,
   useFootballLive,
   useFootballStandings,
+  useFlamengoSchedule,
   useLiveState,
 } from "@/hooks/use-live-data";
-import { ThemePopover } from "@/components/features/theme-popover";
 import { DetailHeader } from "@/components/features/detail-header";
 import { Card } from "@/components/ui/card";
 import { MetaLabel } from "@/components/ui/meta-label";
@@ -26,7 +26,9 @@ export function DetailFootball({ theme, onTheme, onNav }: DetailFootballProps) {
   const copy: Copy = getCopy(theme.lang);
   const today = useFootballToday();
   const live = useFootballLive();
-  const standings = useFootballStandings("brasileirao");
+  const brasileirao = useFootballStandings("brasileirao");
+  const champions = useFootballStandings("champions");
+  const flamengo = useFlamengoSchedule();
   const { state: liveState } = useLiveState();
 
   const isLive = liveState === "live" && live.length > 0;
@@ -43,15 +45,12 @@ export function DetailFootball({ theme, onTheme, onNav }: DetailFootballProps) {
         transition: "background .3s, color .3s",
       }}
     >
-      <DetailHeader active="football" copy={copy} onNav={onNav} />
-
-      <ThemePopover
-        dark={theme.dark}
-        accent={theme.accent}
-        lang={theme.lang}
-        onDark={(v) => onTheme({ dark: v })}
-        onAccent={(id) => onTheme({ accent: id })}
-        onLang={(l) => onTheme({ lang: l })}
+      <DetailHeader
+        active="football"
+        copy={copy}
+        onNav={onNav}
+        theme={theme}
+        onTheme={onTheme}
       />
 
       <div
@@ -79,7 +78,7 @@ export function DetailFootball({ theme, onTheme, onNav }: DetailFootballProps) {
             marginTop: 24,
           }}
         >
-          {/* Left — today + big games */}
+          {/* Left — today's matches + Flamengo upcoming */}
           <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
             <Card title={copy.todayMatches} subtitle="hoje">
               {today.length > 0 ? (
@@ -94,20 +93,48 @@ export function DetailFootball({ theme, onTheme, onNav }: DetailFootballProps) {
                 <MetaLabel>{copy.noData}</MetaLabel>
               )}
             </Card>
+
+            <Card title="Flamengo" subtitle={copy.nextMatches}>
+              {flamengo.length > 0 ? (
+                <div
+                  style={{ display: "flex", flexDirection: "column", gap: 10 }}
+                >
+                  {flamengo.map((m) => (
+                    <MatchCard key={m.id} match={m} copy={copy} />
+                  ))}
+                </div>
+              ) : (
+                <MetaLabel>{copy.noData}</MetaLabel>
+              )}
+            </Card>
           </div>
 
           {/* Right — standings */}
-          <Card
-            title="Brasileirão"
-            subtitle={copy.standings}
-            accent={String(new Date().getFullYear())}
-          >
-            {standings.length > 0 ? (
-              <FootballStandingsTable standings={standings} copy={copy} />
-            ) : (
-              <MetaLabel>{copy.noData}</MetaLabel>
-            )}
-          </Card>
+          <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+            <Card
+              title="Brasileirão"
+              subtitle={copy.standings}
+              accent={String(new Date().getFullYear())}
+            >
+              {brasileirao.length > 0 ? (
+                <FootballStandingsTable standings={brasileirao} copy={copy} />
+              ) : (
+                <MetaLabel>{copy.noData}</MetaLabel>
+              )}
+            </Card>
+
+            <Card
+              title="Champions League"
+              subtitle={copy.standings}
+              accent={String(new Date().getFullYear())}
+            >
+              {champions.length > 0 ? (
+                <FootballStandingsTable standings={champions} copy={copy} />
+              ) : (
+                <MetaLabel>{copy.noData}</MetaLabel>
+              )}
+            </Card>
+          </div>
         </div>
       </div>
     </div>

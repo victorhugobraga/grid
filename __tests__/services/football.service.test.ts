@@ -1,5 +1,4 @@
 import { FootballService } from "@/services/football.service";
-import { ExternalApiError } from "@/lib/errors";
 import { mockFetchSuccess, mockFetchError } from "../helpers/test-utils";
 
 jest.mock("@/lib/cache", () => ({
@@ -9,51 +8,76 @@ jest.mock("@/lib/cache", () => ({
   TTL: { LIVE: 60, FIXTURES: 1800, STANDINGS: 3600, SCHEDULE: 86400 },
 }));
 
-const API_FOOTBALL_STANDINGS_RESPONSE = {
-  response: [
+const ESPN_STANDINGS_RESPONSE = {
+  children: [
     {
-      league: {
-        standings: [
-          [
-            {
-              rank: 1,
-              team: { id: 119, name: "Flamengo", logo: "https://..." },
-              points: 45,
-              all: { played: 15, win: 14, draw: 3, lose: 0 },
-              goalsDiff: 25,
-              form: "WWWWW",
+      standings: {
+        entries: [
+          {
+            team: {
+              id: "119",
+              displayName: "Flamengo",
+              logos: [{ href: "https://a.espncdn.com/logo.png" }],
             },
-          ],
+            stats: [
+              { name: "rank", value: 1 },
+              { name: "points", value: 45 },
+              { name: "gamesPlayed", value: 15 },
+              { name: "wins", value: 14 },
+              { name: "ties", value: 3 },
+              { name: "losses", value: 0 },
+              { name: "pointsFor", value: 30 },
+              { name: "pointsAgainst", value: 5 },
+              { name: "pointDifferential", value: 25 },
+            ],
+          },
         ],
       },
     },
   ],
 };
 
-const API_FOOTBALL_FIXTURES_RESPONSE = {
-  response: [
-    {
-      fixture: {
-        id: 12345,
-        date: "2026-05-10T18:00:00+00:00",
-        status: { short: "NS", elapsed: null },
-      },
-      league: {
-        id: 71,
-        name: "Brasileirao Serie A",
-        round: "Regular Season - 10",
-      },
-      teams: {
-        home: { id: 119, name: "Flamengo", logo: "https://...", goals: null },
-        away: {
-          id: 131,
-          name: "Atletico Mineiro",
-          logo: "https://...",
-          goals: null,
+function makeESPNEvent(
+  id: string,
+  state: "pre" | "in" | "post",
+  statusName = "STATUS_SCHEDULED",
+  homeScore = "",
+  awayScore = "",
+) {
+  return {
+    id,
+    date: "2026-05-10T18:00:00Z",
+    competitions: [
+      {
+        status: {
+          displayClock: state === "in" ? "55:00" : "0:00",
+          type: { state, name: statusName },
         },
+        competitors: [
+          {
+            homeAway: "home",
+            team: { id: "119", displayName: "Flamengo", logo: "https://..." },
+            score: homeScore,
+          },
+          {
+            homeAway: "away",
+            team: {
+              id: "131",
+              displayName: "Atletico Mineiro",
+              logo: "https://...",
+            },
+            score: awayScore,
+          },
+        ],
+        notes: [],
       },
-    },
-  ],
+    ],
+  };
+}
+
+const ESPN_SCOREBOARD_NS = {
+  leagues: [{ id: "4328", name: "Brasileirao Serie A" }],
+  events: [makeESPNEvent("12345", "pre")],
 };
 
 describe("FootballService", () => {
@@ -66,7 +90,7 @@ describe("FootballService", () => {
 
   describe("getStandings", () => {
     it("deve retornar standings do Brasileirão", async () => {
-      global.fetch = mockFetchSuccess(API_FOOTBALL_STANDINGS_RESPONSE);
+      global.fetch = mockFetchSuccess(ESPN_STANDINGS_RESPONSE);
 
       const result = await service.getStandings("brasileirao");
 
@@ -77,7 +101,7 @@ describe("FootballService", () => {
     });
 
     it("deve mapear corretamente won/drawn/lost do formato da API", async () => {
-      global.fetch = mockFetchSuccess(API_FOOTBALL_STANDINGS_RESPONSE);
+      global.fetch = mockFetchSuccess(ESPN_STANDINGS_RESPONSE);
 
       const result = await service.getStandings("brasileirao");
 
@@ -87,11 +111,11 @@ describe("FootballService", () => {
     });
 
     it("deve aceitar todas as ligas suportadas", async () => {
-      global.fetch = mockFetchSuccess(API_FOOTBALL_STANDINGS_RESPONSE);
+      global.fetch = mockFetchSuccess(ESPN_STANDINGS_RESPONSE);
 
       const ligas = [
         "brasileirao",
-        "libertadores",
+        "copa-brasil",
         "champions",
         "worldcup",
       ] as const;
@@ -100,21 +124,20 @@ describe("FootballService", () => {
       }
     });
 
-    it("deve lançar ExternalApiError quando API-Football retorna erro", async () => {
+    it("deve retornar array vazio quando ESPN falha", async () => {
       global.fetch = mockFetchError(429);
 
-      await expect(service.getStandings("brasileirao")).rejects.toThrow(
-        ExternalApiError,
-      );
+      const result = await service.getStandings("brasileirao");
+      expect(result.data).toHaveLength(0);
     });
 
-    it("deve usar ID correto da liga ao chamar a API", async () => {
-      global.fetch = mockFetchSuccess(API_FOOTBALL_STANDINGS_RESPONSE);
+    it("deve chamar ESPN com slug correto para o Brasileirão", async () => {
+      global.fetch = mockFetchSuccess(ESPN_STANDINGS_RESPONSE);
 
       await service.getStandings("brasileirao");
 
       expect(global.fetch).toHaveBeenCalledWith(
-        expect.stringContaining("league=71"),
+        expect.stringContaining("bra.1/standings"),
         expect.anything(),
       );
     });
@@ -122,7 +145,9 @@ describe("FootballService", () => {
 
   describe("getMatchesByDate", () => {
     it("deve retornar partidas do dia informado", async () => {
-      global.fetch = mockFetchSuccess(API_FOOTBALL_FIXTURES_RESPONSE);
+      // fetch é chamado 4 vezes (um por slug ESPN); todas retornam o mesmo evento;
+      // o dedupe por ID mantém apenas 1.
+      global.fetch = mockFetchSuccess(ESPN_SCOREBOARD_NS);
 
       const result = await service.getMatchesByDate("2026-05-10");
 
@@ -132,7 +157,7 @@ describe("FootballService", () => {
     });
 
     it("deve retornar lista vazia quando não há partidas", async () => {
-      global.fetch = mockFetchSuccess({ response: [] });
+      global.fetch = mockFetchSuccess({ events: [] });
 
       const result = await service.getMatchesByDate("2026-05-10");
 
@@ -140,18 +165,28 @@ describe("FootballService", () => {
     });
 
     it("deve mapear status da partida corretamente", async () => {
-      global.fetch = mockFetchSuccess(API_FOOTBALL_FIXTURES_RESPONSE);
+      global.fetch = mockFetchSuccess(ESPN_SCOREBOARD_NS);
 
       const result = await service.getMatchesByDate("2026-05-10");
 
       expect(result.data[0].status.short).toBe("NS");
     });
 
-    it("deve lançar ExternalApiError quando API-Football retorna erro", async () => {
+    it("deve retornar array vazio quando ESPN falha", async () => {
       global.fetch = mockFetchError(500);
 
-      await expect(service.getMatchesByDate("2026-05-10")).rejects.toThrow(
-        ExternalApiError,
+      const result = await service.getMatchesByDate("2026-05-10");
+      expect(result.data).toHaveLength(0);
+    });
+
+    it("deve converter data YYYY-MM-DD para YYYYMMDD na query ESPN", async () => {
+      global.fetch = mockFetchSuccess({ events: [] });
+
+      await service.getMatchesByDate("2026-05-10");
+
+      expect(global.fetch).toHaveBeenCalledWith(
+        expect.stringContaining("dates=20260510"),
+        expect.anything(),
       );
     });
   });
@@ -159,31 +194,10 @@ describe("FootballService", () => {
   describe("getLiveMatches", () => {
     it("deve retornar apenas partidas com status LIVE ou HT", async () => {
       const liveResponse = {
-        response: [
-          {
-            fixture: {
-              id: 1,
-              date: "2026-05-10T18:00:00Z",
-              status: { short: "LIVE", elapsed: 55 },
-            },
-            league: { id: 71, name: "Brasileirao", round: "Round 10" },
-            teams: {
-              home: { id: 119, name: "Flamengo", logo: "", goals: 1 },
-              away: { id: 131, name: "Atletico", logo: "", goals: 0 },
-            },
-          },
-          {
-            fixture: {
-              id: 2,
-              date: "2026-05-10T20:00:00Z",
-              status: { short: "NS", elapsed: null },
-            },
-            league: { id: 71, name: "Brasileirao", round: "Round 10" },
-            teams: {
-              home: { id: 120, name: "Palmeiras", logo: "", goals: null },
-              away: { id: 132, name: "Santos", logo: "", goals: null },
-            },
-          },
+        leagues: [{ id: "4328", name: "Brasileirao Serie A" }],
+        events: [
+          makeESPNEvent("1", "in", "STATUS_IN_PROGRESS", "1", "0"),
+          makeESPNEvent("2", "pre"),
         ],
       };
       global.fetch = mockFetchSuccess(liveResponse);
@@ -195,7 +209,7 @@ describe("FootballService", () => {
     });
 
     it("deve retornar lista vazia quando não há partidas ao vivo", async () => {
-      global.fetch = mockFetchSuccess({ response: [] });
+      global.fetch = mockFetchSuccess({ events: [] });
 
       const result = await service.getLiveMatches();
 

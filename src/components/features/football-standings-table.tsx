@@ -66,7 +66,22 @@ export function FootballStandingsTable({
                     gap: 8,
                   }}
                 >
-                  <TeamMark short={info.short} accent={info.accent} size={18} />
+                  {s.team.logo ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={s.team.logo}
+                      alt={s.team.name}
+                      width={18}
+                      height={18}
+                      style={{ objectFit: "contain", flexShrink: 0 }}
+                    />
+                  ) : (
+                    <TeamMark
+                      short={info.short}
+                      accent={info.accent}
+                      size={18}
+                    />
+                  )}
                   {s.team.name}
                 </span>
               </td>
@@ -87,7 +102,7 @@ export function FootballStandingsTable({
                   fontVariantNumeric: "tabular-nums",
                   color:
                     s.goalsDiff > 0
-                      ? "var(--accent)"
+                      ? "#22C55E"
                       : s.goalsDiff < 0
                         ? "#EF4444"
                         : "var(--fg-muted)",
@@ -101,6 +116,7 @@ export function FootballStandingsTable({
                   textAlign: "right",
                   fontVariantNumeric: "tabular-nums",
                   fontWeight: 700,
+                  color: "var(--fg)",
                 }}
               >
                 {s.points}

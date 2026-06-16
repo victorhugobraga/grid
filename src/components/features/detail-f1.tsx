@@ -10,7 +10,6 @@ import {
   useF1LastResult,
   useLiveState,
 } from "@/hooks/use-live-data";
-import { ThemePopover } from "@/components/features/theme-popover";
 import { DetailHeader } from "@/components/features/detail-header";
 import { Card } from "@/components/ui/card";
 import { MetaLabel } from "@/components/ui/meta-label";
@@ -93,15 +92,12 @@ export function DetailF1({ theme, onTheme, onNav }: DetailF1Props) {
         transition: "background .3s, color .3s",
       }}
     >
-      <DetailHeader active="f1" copy={copy} onNav={onNav} />
-
-      <ThemePopover
-        dark={theme.dark}
-        accent={theme.accent}
-        lang={theme.lang}
-        onDark={(v) => onTheme({ dark: v })}
-        onAccent={(id) => onTheme({ accent: id })}
-        onLang={(l) => onTheme({ lang: l })}
+      <DetailHeader
+        active="f1"
+        copy={copy}
+        onNav={onNav}
+        theme={theme}
+        onTheme={onTheme}
       />
 
       <div
