@@ -83,12 +83,13 @@ function formatDate(lang: "pt" | "en"): string {
 
 interface GreetingProps {
   lang: "pt" | "en";
+  name: string;
   layout?: "center" | "left" | "italic";
 }
 
 const noopSubscribe = () => () => {};
 
-export function Greeting({ lang, layout = "center" }: GreetingProps) {
+export function Greeting({ lang, name, layout = "center" }: GreetingProps) {
   const mounted = useSyncExternalStore(
     noopSubscribe,
     () => true,
@@ -125,7 +126,7 @@ export function Greeting({ lang, layout = "center" }: GreetingProps) {
           textShadow: "0 2px 24px rgba(0,0,0,0.35), 0 1px 2px rgba(0,0,0,0.25)",
         }}
       >
-        {greeting}, Victor
+        {name.trim() ? `${greeting}, ${name.trim()}` : greeting}
         <span style={{ color: "var(--accent)" }}>.</span>
       </h1>
       <div

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { getDailyBackground } from "@/lib/backgrounds";
+import { BACKGROUNDS, getDailyBackground } from "@/lib/backgrounds";
 import { useTheme } from "@/hooks/use-theme";
 import {
   useF1Schedule,
@@ -11,18 +11,20 @@ import {
 } from "@/hooks/use-live-data";
 import { useClock } from "@/hooks/use-clock";
 import { Greeting } from "./greeting";
+import { ThemePopover } from "./theme-popover";
 import { F1FooterSlot } from "./f1-footer-slot";
 import { FootballFooterSlot } from "./football-footer-slot";
 
-const bg = getDailyBackground();
+const dailyBg = getDailyBackground();
 
 export function GridLayout() {
-  const { theme } = useTheme();
+  const { theme, setTheme } = useTheme();
   const { nextRace } = useF1Schedule();
   const footballMatches = useFlamengoSchedule();
   const footballLive = useFootballLive();
   const { state: liveState } = useLiveState();
   const time = useClock();
+  const bg = BACKGROUNDS.find((b) => b.id === theme.bg) ?? dailyBg;
 
   const glass = {
     backdropFilter: "blur(28px) saturate(160%)",
@@ -96,10 +98,25 @@ export function GridLayout() {
           style={{
             display: "flex",
             gap: 16,
+            alignItems: "center",
           }}
         >
           <span>brl/utc-3</span>
           <span style={{ color: "var(--fg)" }}>são paulo</span>
+          <div style={{ pointerEvents: "auto" }}>
+            <ThemePopover
+              dark={theme.dark}
+              accent={theme.accent}
+              lang={theme.lang}
+              name={theme.name}
+              onName={(n) => setTheme({ name: n })}
+              bg={theme.bg}
+              onBg={(id) => setTheme({ bg: id })}
+              onDark={(v) => setTheme({ dark: v })}
+              onAccent={(id) => setTheme({ accent: id })}
+              onLang={(l) => setTheme({ lang: l })}
+            />
+          </div>
         </div>
       </div>
 
@@ -112,7 +129,7 @@ export function GridLayout() {
           transform: "translate(-50%, -50%)",
         }}
       >
-        <Greeting lang={theme.lang} layout="center" />
+        <Greeting lang={theme.lang} name={theme.name} layout="center" />
       </div>
 
       {/* Glass footer */}

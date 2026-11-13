@@ -118,6 +118,10 @@ export function DetailHeader({
             dark={theme.dark}
             accent={theme.accent}
             lang={theme.lang}
+            name={theme.name}
+            onName={(n) => onTheme({ name: n })}
+            bg={theme.bg}
+            onBg={(id) => onTheme({ bg: id })}
             onDark={(v) => onTheme({ dark: v })}
             onAccent={(id) => onTheme({ accent: id })}
             onLang={(l) => onTheme({ lang: l })}

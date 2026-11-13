@@ -43,6 +43,9 @@ export interface Theme {
   accent: AccentId;
   lang: "pt" | "en";
   fontPair: FontPairId;
+  name: string;
+  /** Background id; empty string = daily rotation. */
+  bg: string;
 }
 
 const DEFAULT_THEME: Theme = {
@@ -50,6 +53,8 @@ const DEFAULT_THEME: Theme = {
   accent: "red",
   lang: "pt",
   fontPair: "fraunces",
+  name: "",
+  bg: "",
 };
 
 const STORAGE_KEY = "grid:theme";

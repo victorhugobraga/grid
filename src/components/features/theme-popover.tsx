@@ -2,11 +2,16 @@
 
 import { useState, useRef, useEffect } from "react";
 import { ACCENTS, type AccentId } from "@/hooks/use-theme";
+import { BACKGROUNDS } from "@/lib/backgrounds";
 
 interface ThemePopoverProps {
   dark: boolean;
   accent: AccentId;
   lang: "pt" | "en";
+  name: string;
+  onName: (n: string) => void;
+  bg: string;
+  onBg: (id: string) => void;
   onDark: (v: boolean) => void;
   onAccent: (id: AccentId) => void;
   onLang: (l: "pt" | "en") => void;
@@ -16,6 +21,10 @@ export function ThemePopover({
   dark,
   accent,
   lang,
+  name,
+  onName,
+  bg,
+  onBg,
   onDark,
   onAccent,
   onLang,
@@ -109,6 +118,27 @@ export function ThemePopover({
             animation: "gridFadeIn 160ms ease-out",
           }}
         >
+          <PopoverSection label="Nome">
+            <input
+              type="text"
+              value={name}
+              maxLength={30}
+              onChange={(e) => onName(e.target.value)}
+              placeholder="Seu nome"
+              style={{
+                padding: "8px 10px",
+                borderRadius: 8,
+                background: "transparent",
+                border: "1px solid var(--border)",
+                color: "var(--fg)",
+                fontFamily: "var(--font-mono)",
+                fontSize: 11,
+                letterSpacing: "0.08em",
+                outline: "none",
+              }}
+            />
+          </PopoverSection>
+
           <PopoverSection label="Modo">
             <div style={{ display: "flex", gap: 6 }}>
               {(
@@ -148,6 +178,38 @@ export function ThemePopover({
                     outlineOffset: 3,
                     transition: "outline-offset .15s, transform .15s",
                     transform: a.id === accent ? "scale(1.15)" : "scale(1)",
+                  }}
+                />
+              ))}
+            </div>
+          </PopoverSection>
+
+          <PopoverSection label="Fundo">
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+              <PopoverButton selected={bg === ""} onClick={() => onBg("")}>
+                Auto
+              </PopoverButton>
+              {BACKGROUNDS.map((b) => (
+                <button
+                  key={b.id}
+                  onClick={() => onBg(b.id)}
+                  aria-label={b.label}
+                  title={b.label}
+                  style={{
+                    width: 36,
+                    height: 26,
+                    borderRadius: 6,
+                    padding: 0,
+                    cursor: "pointer",
+                    backgroundImage: `url(${b.url.replace("w=2400", "w=120")})`,
+                    backgroundSize: "cover",
+                    backgroundPosition: "center",
+                    border:
+                      bg === b.id
+                        ? "1px solid var(--accent)"
+                        : "1px solid var(--border)",
+                    outline: bg === b.id ? "1px solid var(--accent)" : "none",
+                    outlineOffset: 2,
                   }}
                 />
               ))}
