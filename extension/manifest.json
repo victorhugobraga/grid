@@ -1,0 +1,7 @@
+{
+  "manifest_version": 3,
+  "name": "Grid — Nova Guia",
+  "version": "1.0.0",
+  "description": "Abre o dashboard Grid (F1 e Futebol) como nova guia.",
+  "chrome_url_overrides": { "newtab": "newtab.html" }
+}
