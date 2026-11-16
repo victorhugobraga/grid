@@ -36,8 +36,14 @@ function FavoritePill({ favorite }: { favorite: Favorite }) {
   return (
     <a
       href={favorite.url}
-      target="_blank"
-      rel="noopener noreferrer"
+      onClick={(e) => {
+        // Mesma janela, sem entrada no histórico (o botão voltar não retorna aqui).
+        // Ctrl/Cmd/Shift/botão do meio mantêm o comportamento nativo.
+        if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey)
+          return;
+        e.preventDefault();
+        window.location.replace(favorite.url);
+      }}
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
       style={{
