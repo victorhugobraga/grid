@@ -125,6 +125,8 @@ export function DetailHeader({
             onDark={(v) => onTheme({ dark: v })}
             onAccent={(id) => onTheme({ accent: id })}
             onLang={(l) => onTheme({ lang: l })}
+            favorites={theme.favorites}
+            onFavorites={(f) => onTheme({ favorites: f })}
           />
         </div>
       )}

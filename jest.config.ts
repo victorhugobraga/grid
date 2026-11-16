@@ -10,6 +10,7 @@ const config: Config = {
         "**/__tests__/services/**/*.test.ts",
         "**/__tests__/api/**/*.test.ts",
         "**/__tests__/schemas/**/*.test.ts",
+        "**/__tests__/lib/**/*.test.ts",
       ],
       moduleNameMapper: { "^@/(.*)$": "<rootDir>/src/$1" },
       setupFiles: ["<rootDir>/jest.setup.ts"],

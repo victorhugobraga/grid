@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { ACCENTS, type AccentId } from "@/hooks/use-theme";
 import { BACKGROUNDS } from "@/lib/backgrounds";
+import { normalizeUrl, type Favorite } from "@/lib/favorites";
 
 interface ThemePopoverProps {
   dark: boolean;
@@ -15,6 +16,8 @@ interface ThemePopoverProps {
   onDark: (v: boolean) => void;
   onAccent: (id: AccentId) => void;
   onLang: (l: "pt" | "en") => void;
+  favorites: Favorite[];
+  onFavorites: (f: Favorite[]) => void;
 }
 
 export function ThemePopover({
@@ -28,6 +31,8 @@ export function ThemePopover({
   onDark,
   onAccent,
   onLang,
+  favorites,
+  onFavorites,
 }: ThemePopoverProps) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -234,6 +239,14 @@ export function ThemePopover({
               ))}
             </div>
           </PopoverSection>
+
+          <PopoverSection label={lang === "pt" ? "Favoritos" : "Favorites"}>
+            <FavoritesEditor
+              lang={lang}
+              favorites={favorites}
+              onChange={onFavorites}
+            />
+          </PopoverSection>
         </div>
       )}
     </div>
@@ -299,5 +312,129 @@ function PopoverButton({
     >
       {children}
     </button>
+  );
+}
+
+function FavoritesEditor({
+  lang,
+  favorites,
+  onChange,
+}: {
+  lang: "pt" | "en";
+  favorites: Favorite[];
+  onChange: (f: Favorite[]) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [name, setName] = useState("");
+  const [url, setUrl] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const pt = lang === "pt";
+
+  const input: React.CSSProperties = {
+    padding: "7px 10px",
+    borderRadius: 8,
+    border: "1px solid var(--border)",
+    background: "transparent",
+    color: "var(--fg)",
+    fontFamily: "var(--font-mono)",
+    fontSize: 11,
+    outline: "none",
+    width: "100%",
+    boxSizing: "border-box",
+  };
+
+  const add = () => {
+    const normalized = normalizeUrl(url);
+    if (!normalized) {
+      setError(pt ? "URL inválida" : "Invalid URL");
+      return;
+    }
+    const label =
+      name.trim() || new URL(normalized).hostname.replace(/^www\./, "");
+    onChange([
+      ...favorites,
+      { id: `${Date.now()}-${favorites.length}`, name: label, url: normalized },
+    ]);
+    setName("");
+    setUrl("");
+    setError(null);
+  };
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+      <PopoverButton selected={open} onClick={() => setOpen((v) => !v)}>
+        {pt ? "Favoritos" : "Favorites"} ({favorites.length})
+      </PopoverButton>
+
+      {open && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {favorites.map((f) => (
+            <div
+              key={f.id}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: 8,
+                fontFamily: "var(--font-mono)",
+                fontSize: 11,
+                color: "var(--fg-muted)",
+              }}
+            >
+              <span
+                style={{
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {f.name}
+              </span>
+              <button
+                onClick={() => onChange(favorites.filter((x) => x.id !== f.id))}
+                aria-label={pt ? `Remover ${f.name}` : `Remove ${f.name}`}
+                style={{
+                  background: "none",
+                  border: "none",
+                  color: "var(--fg-faint)",
+                  cursor: "pointer",
+                  fontSize: 14,
+                  lineHeight: 1,
+                }}
+              >
+                ×
+              </button>
+            </div>
+          ))}
+
+          <input
+            style={input}
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder={pt ? "Nome" : "Name"}
+            aria-label={pt ? "Nome do site" : "Site name"}
+          />
+          <input
+            style={input}
+            value={url}
+            onChange={(e) => {
+              setUrl(e.target.value);
+              setError(null);
+            }}
+            onKeyDown={(e) => e.key === "Enter" && add()}
+            placeholder="https://..."
+            aria-label="URL"
+          />
+          {error && (
+            <span style={{ fontSize: 10.5, color: "var(--accent)" }}>
+              {error}
+            </span>
+          )}
+          <PopoverButton selected={false} onClick={add}>
+            {pt ? "Adicionar" : "Add"}
+          </PopoverButton>
+        </div>
+      )}
+    </div>
   );
 }

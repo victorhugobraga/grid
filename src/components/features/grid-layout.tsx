@@ -12,6 +12,7 @@ import {
 import { useClock } from "@/hooks/use-clock";
 import { Greeting } from "./greeting";
 import { ThemePopover } from "./theme-popover";
+import { FavoritesBar } from "./favorites-bar";
 import { F1FooterSlot } from "./f1-footer-slot";
 import { FootballFooterSlot } from "./football-footer-slot";
 
@@ -115,9 +116,25 @@ export function GridLayout() {
               onDark={(v) => setTheme({ dark: v })}
               onAccent={(id) => setTheme({ accent: id })}
               onLang={(l) => setTheme({ lang: l })}
+              favorites={theme.favorites}
+              onFavorites={(f) => setTheme({ favorites: f })}
             />
           </div>
         </div>
+      </div>
+
+      {/* Favorites */}
+      <div
+        style={{
+          position: "absolute",
+          top: 64,
+          left: "50%",
+          transform: "translateX(-50%)",
+          maxWidth: "80%",
+          zIndex: 5,
+        }}
+      >
+        <FavoritesBar favorites={theme.favorites} />
       </div>
 
       {/* Centered greeting — 38% from top */}

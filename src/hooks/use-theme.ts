@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import type { Favorite } from "@/lib/favorites";
 
 export const ACCENTS = [
   { id: "red" as const, hex: "#E8002D", name: "Vermelho" },
@@ -46,6 +47,7 @@ export interface Theme {
   name: string;
   /** Background id; empty string = daily rotation. */
   bg: string;
+  favorites: Favorite[];
 }
 
 const DEFAULT_THEME: Theme = {
@@ -55,6 +57,7 @@ const DEFAULT_THEME: Theme = {
   fontPair: "fraunces",
   name: "",
   bg: "",
+  favorites: [],
 };
 
 const STORAGE_KEY = "grid:theme";
