@@ -36,6 +36,7 @@ function FavoritePill({ favorite }: { favorite: Favorite }) {
   return (
     <a
       href={favorite.url}
+      target="_top"
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
       style={{
